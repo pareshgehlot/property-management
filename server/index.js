@@ -174,23 +174,28 @@ function triggerBackgroundFetch(property) {
 
 // Protected endpoints: require token
 app.get('/api/properties', requireAuth, (req, res) => {
-  const props = readProperties();
-  const auth = req.headers['authorization'];
-  const token = auth.replace('Bearer ', '');
-  const payload = TOKENS[token];
-  const username = payload.user;
-  const isAdminUser = username === DEFAULT_USER;
-  
-  if (isAdminUser) {
-    res.json(props);
-  } else {
-    // Non-admin: only accessible properties
-    const users = readUsers();
-    const user = users.find(u => u.username === username);
-    const accessibleIds = user?.accessibleProperties || [];
-    const filtered = props.filter(p => accessibleIds.includes(p.id));
-    res.json(filtered);
-  }
+  (async () => {
+    const props = readProperties();
+    const auth = req.headers['authorization'];
+    const token = auth.replace('Bearer ', '');
+    const payload = TOKENS[token];
+    const username = payload.user;
+    const isAdminUser = username === DEFAULT_USER;
+    
+    if (isAdminUser) {
+      res.json(props);
+    } else {
+      // Non-admin: only accessible properties
+      const users = await readUsers();
+      const user = users.find(u => u.username === username);
+      const accessibleIds = user?.accessibleProperties || [];
+      const filtered = props.filter(p => accessibleIds.includes(p.id));
+      res.json(filtered);
+    }
+  })().catch(err => {
+    console.error('Error in GET /api/properties:', err);
+    res.status(500).json({ error: 'Failed to fetch properties' });
+  });
 });
 
 app.post('/api/properties', requireAuth, (req, res) => {
@@ -255,28 +260,50 @@ app.post('/api/properties/:id/refresh', requireAuth, async (req, res) => {
 });
 
 // return bookings overlapping a date range
-app.get('/api/properties/:id/bookings', (req, res) => {
-  const id = req.params.id;
-  const from = req.query.from; // ISO yyyy-mm-dd
-  const to = req.query.to;
-  const cacheFile = path.join(CACHE_DIR, `${id}.json`);
-  if (!fs.existsSync(cacheFile)) return res.status(404).json({ error: 'no cache yet' });
-  const raw = fs.readFileSync(cacheFile, 'utf8');
-  const parsed = JSON.parse(raw);
-  const events = parsed.events || [];
-  let filtered = events;
-  if (from || to) {
-    const fromDate = from ? new Date(from) : new Date('1970-01-01');
-    const toDate = to ? new Date(to) : new Date('2100-01-01');
-    filtered = events.filter(e => {
-      const s = e.start ? new Date(e.start) : null;
-      const en = e.end ? new Date(e.end) : null;
-      if (!s || !en) return false;
-      // overlap test
-      return s < toDate && en > fromDate;
-    });
-  }
-  res.json({ fetchedAt: parsed.fetchedAt, events: filtered });
+app.get('/api/properties/:id/bookings', requireAuth, (req, res) => {
+  (async () => {
+    const id = req.params.id;
+    const from = req.query.from; // ISO yyyy-mm-dd
+    const to = req.query.to;
+    const cacheFile = path.join(CACHE_DIR, `${id}.json`);
+    if (!fs.existsSync(cacheFile)) return res.status(404).json({ error: 'no cache yet' });
+    const raw = fs.readFileSync(cacheFile, 'utf8');
+    const parsed = JSON.parse(raw);
+    let events = parsed.events || [];
+    
+    let filtered = events;
+    if (from || to) {
+      const fromDate = from ? new Date(from) : new Date('1970-01-01');
+      const toDate = to ? new Date(to) : new Date('2100-01-01');
+      filtered = events.filter(e => {
+        const s = e.start ? new Date(e.start) : null;
+        const en = e.end ? new Date(e.end) : null;
+        if (!s || !en) return false;
+        // overlap test
+        return s < toDate && en > fromDate;
+      });
+    }
+    
+    // Check user role - non-admin users only get date info
+    const auth = req.headers['authorization'];
+    const token = auth.replace('Bearer ', '');
+    const payload = TOKENS[token];
+    const username = payload.user;
+    const isAdminUser = username === DEFAULT_USER;
+    
+    if (!isAdminUser) {
+      // Simplify events for non-admin users - only keep start and end dates
+      filtered = filtered.map(e => ({
+        start: e.start,
+        end: e.end
+      }));
+    }
+    
+    res.json({ fetchedAt: parsed.fetchedAt, events: filtered });
+  })().catch(err => {
+    console.error('Error in GET /api/properties/:id/bookings:', err);
+    res.status(500).json({ error: 'Failed to fetch bookings' });
+  });
 });
 
 app.get('/api/properties/:id/status', (req, res) => {
@@ -291,7 +318,8 @@ app.get('/api/properties/:id/status', (req, res) => {
 // ===== USER MANAGEMENT SYSTEM (MongoDB) =====
 async function readUsers() {
   const col = await getUsersCollection();
-  return await col.find({}).toArray();
+  const result = await col.find({}).toArray();
+  return Array.isArray(result) ? result : [];
 }
 
 async function findUserByUsername(username) {

@@ -483,6 +483,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   // open booking detail modal
   viewBooking(booking: any){
+    // Non-admin users cannot view booking details
+    if (this.userRole !== 'admin') return;
     this.selectedBooking = booking;
     this.bookingDetailVisible = true;
   }
