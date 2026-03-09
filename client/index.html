@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Property Dashboard</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Property Management</h1>
+
+      <div id="login">
+        <h2>Login</h2>
+        <form id="loginForm">
+          <input id="username" placeholder="Username" required />
+          <input id="password" type="password" placeholder="Password" required />
+          <button type="submit">Login</button>
+        </form>
+      </div>
+
+      <div id="home" class="hidden">
+        <h2>Properties</h2>
+        <form id="addForm">
+          <input id="name" placeholder="Name" required />
+          <input id="icsUrl" placeholder="ICS URL" required />
+          <button type="submit">Add Property</button>
+        </form>
+        <ul id="propsList"></ul>
+      </div>
+
+      <div id="dashboard" class="hidden">
+        <button id="back">← Back</button>
+        <h2 id="propName">Property</h2>
+        <div class="controls">
+          <label>Graph range:
+            <select id="graphRange">
+              <option value="this">Current month</option>
+              <option value="next2">Next two months</option>
+              <option value="range">Custom range</option>
+            </select>
+          </label>
+          <label id="customRange" class="hidden">From: <input id="from" type="date"/></label>
+          <label id="customRange2" class="hidden">To: <input id="to" type="date"/></label>
+          <button id="refreshBookings">Refresh</button>
+        </div>
+
+        <canvas id="chart" height="120"></canvas>
+
+        <div id="calNav">
+          <button id="prev">◀</button>
+          <span id="calTitle"></span>
+          <button id="next">▶</button>
+        </div>
+        <div id="calendar"></div>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+  </html>

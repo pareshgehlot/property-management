@@ -1,0 +1,14 @@
+[
+  {
+    "id": "prop-4910",
+    "name": "Property 4910",
+    "icsUrl": "https://api.beds24.com/ical/bookings.ics?roomid=655372&nourl=true",
+    "createdAt": "2026-03-08T00:00:00.000Z"
+  },
+  {
+    "id": "prop-910",
+    "name": "Property 910",
+    "icsUrl": "https://api.beds24.com/ical/bookings.ics?roomid=485779&nourl=true",
+    "createdAt": "2026-03-08T00:00:00.000Z"
+  }
+]

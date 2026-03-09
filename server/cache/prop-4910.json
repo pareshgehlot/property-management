@@ -1,0 +1,65 @@
+{
+  "fetchedAt": "2026-03-09T01:41:13.780Z",
+  "events": [
+    {
+      "uid": "20260308140000-b83455318@beds24.com",
+      "bookingId": "83455318",
+      "summary": "Booking 83455318",
+      "description": "Arriving 08 Mar 2026\\nDeparting 10 Mar 2026",
+      "arrival": "08 Mar 2026\\nDeparting 10 Mar 2026",
+      "departure": "10 Mar 2026",
+      "start": "2026-03-08T00:00:00.000Z",
+      "end": "2026-03-10T00:00:00.000Z",
+      "createdAt": "2026-03-09T03:28:44.000Z",
+      "nights": 2
+    },
+    {
+      "uid": "20260313140000-b83409314@beds24.com",
+      "bookingId": "83409314",
+      "summary": "Booking 83409314",
+      "description": "Arriving 13 Mar 2026\\nDeparting 15 Mar 2026",
+      "arrival": "13 Mar 2026\\nDeparting 15 Mar 2026",
+      "departure": "15 Mar 2026",
+      "start": "2026-03-13T00:00:00.000Z",
+      "end": "2026-03-15T00:00:00.000Z",
+      "createdAt": "2026-03-09T03:28:44.000Z",
+      "nights": 2
+    },
+    {
+      "uid": "20260318140000-b83272138@beds24.com",
+      "bookingId": "83272138",
+      "summary": "Booking 83272138",
+      "description": "Arriving 18 Mar 2026\\nDeparting 22 Mar 2026",
+      "arrival": "18 Mar 2026\\nDeparting 22 Mar 2026",
+      "departure": "22 Mar 2026",
+      "start": "2026-03-18T00:00:00.000Z",
+      "end": "2026-03-22T00:00:00.000Z",
+      "createdAt": "2026-03-09T03:28:44.000Z",
+      "nights": 4
+    },
+    {
+      "uid": "20260328140000-b83313510@beds24.com",
+      "bookingId": "83313510",
+      "summary": "Booking 83313510",
+      "description": "Arriving 28 Mar 2026\\nDeparting 31 Mar 2026",
+      "arrival": "28 Mar 2026\\nDeparting 31 Mar 2026",
+      "departure": "31 Mar 2026",
+      "start": "2026-03-28T00:00:00.000Z",
+      "end": "2026-03-31T00:00:00.000Z",
+      "createdAt": "2026-03-09T03:28:44.000Z",
+      "nights": 3
+    },
+    {
+      "uid": "20260406140000-b83280728@beds24.com",
+      "bookingId": "83280728",
+      "summary": "Booking 83280728",
+      "description": "Arriving 06 Apr 2026\\nDeparting 09 Apr 2026",
+      "arrival": "06 Apr 2026\\nDeparting 09 Apr 2026",
+      "departure": "09 Apr 2026",
+      "start": "2026-04-06T00:00:00.000Z",
+      "end": "2026-04-09T00:00:00.000Z",
+      "createdAt": "2026-03-09T03:28:44.000Z",
+      "nights": 3
+    }
+  ]
+}
