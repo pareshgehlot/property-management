@@ -1,0 +1,16 @@
+{
+  "name": "property-management-app",
+  "version": "1.0.0",
+  "description": "Property Management Application",
+  "main": "server/index.js",
+  "scripts": {
+    "build": "cd client-angular && npm install && npm run build",
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "postinstall": "cd server && npm install && cd ../client-angular && npm install"
+  },
+  "dependencies": {},
+  "engines": {
+    "node": "18.x"
+  }
+}
