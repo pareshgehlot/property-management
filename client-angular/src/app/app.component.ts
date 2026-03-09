@@ -36,12 +36,21 @@ export class AppComponent implements OnInit, OnDestroy {
   bookingDetailVisible: boolean = false;
   selectedBooking: any = null;
 
+  // User management
+  userRole: string = ''; // 'admin' or 'viewer'
+  users: any[] = [];
+  showUsersPanel: boolean = false;
+  newUsername: string = '';
+  newPassword: string = '';
+  selectedUserForAccess: any = null;
+  selectedPropertiesForUser: string[] = [];
+
   constructor(private api: ApiService) {}
 
   ngOnInit(){
     const t = localStorage.getItem('pm_token');
     if(t) this.token = t;
-    if(this.token) this.loadProps();
+    if(this.token) { this.loadProps(); this.loadUserInfo(); }
   }
 
   ngOnDestroy(){ if(this.barChart) this.barChart.destroy(); if(this.pieChart) this.pieChart.destroy(); }
@@ -63,6 +72,62 @@ export class AppComponent implements OnInit, OnDestroy {
     // initialize filtered list - DO NOT auto-select first property
     this.filteredProperties = [...this.properties];
     this.selectedId = '';
+  }
+
+  async loadUserInfo(){
+    try{
+      const userInfo: any = await this.api.getUserInfo().toPromise();
+      this.userRole = userInfo.role;
+      if(this.userRole === 'admin') this.loadUsers();
+    }catch(e){ console.error('Failed to load user info:', e); }
+  }
+
+  async loadUsers(){
+    try{
+      this.users = (await this.api.getUsers().toPromise()) || [];
+    }catch(e){ console.error('Failed to load users:', e); }
+  }
+
+  async createUser(){
+    if(!this.newUsername || !this.newPassword) { alert('Username and password required'); return; }
+    try{
+      await this.api.createUser(this.newUsername, this.newPassword, []).toPromise();
+      this.newUsername = '';
+      this.newPassword = '';
+      this.loadUsers();
+    }catch(e){ alert('Failed to create user'); }
+  }
+
+  async deleteUser(userId: string){
+    if(!confirm('Delete this user?')) return;
+    try{
+      await this.api.deleteUser(userId).toPromise();
+      this.loadUsers();
+    }catch(e){ alert('Failed to delete user'); }
+  }
+
+  async updateUserAccess(){
+    if(!this.selectedUserForAccess) { alert('Select a user'); return; }
+    try{
+      await this.api.updateUserAccess(this.selectedUserForAccess.id, this.selectedPropertiesForUser).toPromise();
+      this.loadUsers();
+      this.selectedUserForAccess = null;
+      this.selectedPropertiesForUser = [];
+    }catch(e){ alert('Failed to update user access'); }
+  }
+
+  selectUserForAccess(user: any){
+    this.selectedUserForAccess = user;
+    this.selectedPropertiesForUser = [...(user.accessibleProperties || [])];
+  }
+
+  togglePropertyAccess(propId: string){
+    const idx = this.selectedPropertiesForUser.indexOf(propId);
+    if(idx >= 0){
+      this.selectedPropertiesForUser.splice(idx, 1);
+    }else{
+      this.selectedPropertiesForUser.push(propId);
+    }
   }
 
   onSearchChange(){

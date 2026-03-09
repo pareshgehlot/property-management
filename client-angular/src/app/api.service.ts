@@ -26,4 +26,17 @@ export class ApiService {
     if(from || to) q = `?from=${from||''}&to=${to||''}`;
     return this.http.get<any>(this.base + `/properties/${id}/bookings${q}`, this.headers());
   }
+
+  // User Management APIs
+  getUserInfo() { return this.http.get<any>(this.base + '/me', this.headers()); }
+  getUsers() { return this.http.get<any[]>(this.base + '/users', this.headers()); }
+  createUser(username: string, password: string, accessibleProperties: string[]) { 
+    return this.http.post(this.base + '/users', { username, password, accessibleProperties }, this.headers()); 
+  }
+  updateUserAccess(userId: string, accessibleProperties: string[]) { 
+    return this.http.put(this.base + `/users/${userId}`, { accessibleProperties }, this.headers()); 
+  }
+  deleteUser(userId: string) { 
+    return this.http.delete(this.base + `/users/${userId}`, this.headers()); 
+  }
 }

@@ -164,10 +164,26 @@ function triggerBackgroundFetch(property) {
 // Protected endpoints: require token
 app.get('/api/properties', requireAuth, (req, res) => {
   const props = readProperties();
-  res.json(props);
+  const auth = req.headers['authorization'];
+  const token = auth.replace('Bearer ', '');
+  const payload = TOKENS[token];
+  const username = payload.user;
+  const isAdminUser = username === DEFAULT_USER;
+  
+  if (isAdminUser) {
+    res.json(props);
+  } else {
+    // Non-admin: only accessible properties
+    const users = readUsers();
+    const user = users.find(u => u.username === username);
+    const accessibleIds = user?.accessibleProperties || [];
+    const filtered = props.filter(p => accessibleIds.includes(p.id));
+    res.json(filtered);
+  }
 });
 
 app.post('/api/properties', requireAuth, (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
   const { name, icsUrl } = req.body;
   if (!name || !icsUrl) return res.status(400).json({ error: 'name and icsUrl required' });
   const props = readProperties();
@@ -186,6 +202,7 @@ app.post('/api/properties', requireAuth, (req, res) => {
 });
 
 app.delete('/api/properties/:id', requireAuth, (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
   const id = req.params.id;
   let props = readProperties();
   const exists = props.find(p => p.id === id);
@@ -200,6 +217,7 @@ app.delete('/api/properties/:id', requireAuth, (req, res) => {
 
 // update property (name, icsUrl)
 app.put('/api/properties/:id', requireAuth, (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
   const id = req.params.id;
   const { name, icsUrl } = req.body || {};
   if (!name || !icsUrl) return res.status(400).json({ error: 'name and icsUrl required' });
@@ -256,6 +274,104 @@ app.get('/api/properties/:id/status', (req, res) => {
   if (!fs.existsSync(cacheFile)) return res.json({ status: 'not-fetched' });
   const parsed = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
   res.json({ status: 'ok', fetchedAt: parsed.fetchedAt, count: (parsed.events || []).length });
+});
+
+
+// ===== USER MANAGEMENT SYSTEM =====
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+
+function readUsers() {
+  if (!fs.existsSync(USERS_FILE)) return [];
+  try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); }
+  catch (e) { console.error('Error reading users:', e); return []; }
+}
+
+function writeUsers(users) {
+  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+}
+
+// Only admin (from .env) can create/manage users
+function isAdmin(req) {
+  const auth = req.headers['authorization'];
+  if (!auth) return false;
+  const token = auth.replace('Bearer ', '');
+  const payload = TOKENS[token];
+  return payload && payload.user === DEFAULT_USER;
+}
+
+// Get all users (admin only)
+app.get('/api/users', requireAuth, (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
+  const users = readUsers();
+  res.json(users.map(u => ({ id: u.id, username: u.username, accessibleProperties: u.accessibleProperties || [], createdAt: u.createdAt })));
+});
+
+// Create new user (admin only)
+app.post('/api/users', requireAuth, (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
+  const { username, password, accessibleProperties } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'username and password required' });
+  
+  const users = readUsers();
+  if (users.find(u => u.username === username)) return res.status(400).json({ error: 'User already exists' });
+  
+  const newUser = {
+    id: uuidv4(),
+    username,
+    password, // In production, hash this!
+    accessibleProperties: accessibleProperties || [],
+    createdAt: new Date().toISOString()
+  };
+  users.push(newUser);
+  writeUsers(users);
+  res.json({ id: newUser.id, username: newUser.username, accessibleProperties: newUser.accessibleProperties, createdAt: newUser.createdAt });
+});
+
+// Update user's accessible properties (admin only)
+app.put('/api/users/:userId', requireAuth, (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
+  const { userId } = req.params;
+  const { accessibleProperties } = req.body;
+  if (!Array.isArray(accessibleProperties)) return res.status(400).json({ error: 'accessibleProperties must be an array' });
+  
+  const users = readUsers();
+  const user = users.find(u => u.id === userId);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  
+  user.accessibleProperties = accessibleProperties;
+  writeUsers(users);
+  res.json({ id: user.id, username: user.username, accessibleProperties: user.accessibleProperties });
+});
+
+// Delete user (admin only)
+app.delete('/api/users/:userId', requireAuth, (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
+  const { userId } = req.params;
+  
+  let users = readUsers();
+  const initialLength = users.length;
+  users = users.filter(u => u.id !== userId);
+  
+  if (users.length === initialLength) return res.status(404).json({ error: 'User not found' });
+  writeUsers(users);
+  res.json({ success: true });
+});
+
+// Get current user info (logged-in users)
+app.get('/api/me', requireAuth, (req, res) => {
+  const auth = req.headers['authorization'];
+  const token = auth.replace('Bearer ', '');
+  const payload = TOKENS[token];
+  const username = payload.user;
+  const isAdminUser = username === DEFAULT_USER;
+  
+  if (isAdminUser) {
+    res.json({ username, role: 'admin', accessibleProperties: [] });
+  } else {
+    const users = readUsers();
+    const user = users.find(u => u.username === username);
+    res.json({ username, role: 'viewer', accessibleProperties: user?.accessibleProperties || [] });
+  }
 });
 
 // serve Angular build from public folder
