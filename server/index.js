@@ -258,8 +258,8 @@ app.get('/api/properties/:id/status', (req, res) => {
   res.json({ status: 'ok', fetchedAt: parsed.fetchedAt, count: (parsed.events || []).length });
 });
 
-// serve Angular build if present (client-angular)
-const CLIENT_DIST = path.join(__dirname, '..', 'client-angular', 'dist', 'client-angular');
+// serve Angular build from public folder
+const CLIENT_DIST = path.join(__dirname, '..', 'public');
 console.log('CLIENT_DIST:', CLIENT_DIST);
 console.log('CLIENT_DIST exists:', fs.existsSync(CLIENT_DIST));
 if (fs.existsSync(CLIENT_DIST)) {
