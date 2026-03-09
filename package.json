@@ -4,10 +4,9 @@
   "description": "Property Management Application",
   "main": "server/index.js",
   "scripts": {
-    "build": "cd client-angular && npm install && npm run build",
+    "build": "cd client-angular && npm install && npm run build && cd .. && cd server && npm install && cd ..",
     "start": "node server/index.js",
-    "dev": "node server/index.js",
-    "postinstall": "cd server && npm install && cd ../client-angular && npm install"
+    "dev": "node server/index.js"
   },
   "dependencies": {},
   "engines": {
