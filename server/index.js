@@ -76,6 +76,7 @@ function parseIcs(text){
   return events;
 }
 const { v4: uuidv4 } = require('uuid');
+const { getUsersCollection } = require('./mongo');
 
 const DATA_DIR = path.join(__dirname);
 const PROPS_FILE = path.join(DATA_DIR, 'properties.json');
@@ -110,15 +111,25 @@ function requireAuth(req, res, next) {
 }
 
 app.post('/api/login', (req, res) => {
-  const { username, password } = req.body || {};
-  if (!username || !password) return res.status(400).json({ error: 'username and password required' });
-  if (username === DEFAULT_USER && password === DEFAULT_PASS) {
-    const token = generateToken();
-    const expires = new Date(Date.now() + 24 * 3600 * 1000); // 24h
-    TOKENS[token] = { user: username, expires: expires.toISOString() };
-    return res.json({ token, expires: expires.toISOString() });
-  }
-  return res.status(401).json({ error: 'invalid credentials' });
+  (async () => {
+    const { username, password } = req.body || {};
+    if (!username || !password) return res.status(400).json({ error: 'username and password required' });
+    if (username === DEFAULT_USER && password === DEFAULT_PASS) {
+      const token = generateToken();
+      const expires = new Date(Date.now() + 24 * 3600 * 1000); // 24h
+      TOKENS[token] = { user: username, expires: expires.toISOString() };
+      return res.json({ token, expires: expires.toISOString() });
+    }
+    // Check MongoDB for non-admin users
+    const user = await findUserByUsername(username);
+    if (user && user.password === password) {
+      const token = generateToken();
+      const expires = new Date(Date.now() + 24 * 3600 * 1000); // 24h
+      TOKENS[token] = { user: username, expires: expires.toISOString() };
+      return res.json({ token, expires: expires.toISOString() });
+    }
+    return res.status(401).json({ error: 'invalid credentials' });
+  })();
 });
 
 
@@ -277,17 +288,20 @@ app.get('/api/properties/:id/status', (req, res) => {
 });
 
 
-// ===== USER MANAGEMENT SYSTEM =====
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-
-function readUsers() {
-  if (!fs.existsSync(USERS_FILE)) return [];
-  try { return JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); }
-  catch (e) { console.error('Error reading users:', e); return []; }
+// ===== USER MANAGEMENT SYSTEM (MongoDB) =====
+async function readUsers() {
+  const col = await getUsersCollection();
+  return await col.find({}).toArray();
 }
 
-function writeUsers(users) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+async function findUserByUsername(username) {
+  const col = await getUsersCollection();
+  return await col.findOne({ username });
+}
+
+async function findUserById(id) {
+  const col = await getUsersCollection();
+  return await col.findOne({ id });
 }
 
 // Only admin (from .env) can create/manage users
@@ -301,77 +315,81 @@ function isAdmin(req) {
 
 // Get all users (admin only)
 app.get('/api/users', requireAuth, (req, res) => {
-  if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
-  const users = readUsers();
-  res.json(users.map(u => ({ id: u.id, username: u.username, accessibleProperties: u.accessibleProperties || [], createdAt: u.createdAt })));
+  (async () => {
+    if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
+    const users = await readUsers();
+    res.json(users.map(u => ({ id: u.id, username: u.username, accessibleProperties: u.accessibleProperties || [], createdAt: u.createdAt })));
+  })();
 });
 
 // Create new user (admin only)
 app.post('/api/users', requireAuth, (req, res) => {
-  if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
-  const { username, password, accessibleProperties } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'username and password required' });
-  
-  const users = readUsers();
-  if (users.find(u => u.username === username)) return res.status(400).json({ error: 'User already exists' });
-  
-  const newUser = {
-    id: uuidv4(),
-    username,
-    password, // In production, hash this!
-    accessibleProperties: accessibleProperties || [],
-    createdAt: new Date().toISOString()
-  };
-  users.push(newUser);
-  writeUsers(users);
-  res.json({ id: newUser.id, username: newUser.username, accessibleProperties: newUser.accessibleProperties, createdAt: newUser.createdAt });
+  (async () => {
+    if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
+    const { username, password, accessibleProperties } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'username and password required' });
+    const col = await getUsersCollection();
+    const existing = await col.findOne({ username });
+    if (existing) return res.status(400).json({ error: 'User already exists' });
+    const newUser = {
+      id: uuidv4(),
+      username,
+      password, // In production, hash this!
+      accessibleProperties: accessibleProperties || [],
+      createdAt: new Date().toISOString()
+    };
+    await col.insertOne(newUser);
+    res.json({ id: newUser.id, username: newUser.username, accessibleProperties: newUser.accessibleProperties, createdAt: newUser.createdAt });
+  })();
 });
 
 // Update user's accessible properties (admin only)
 app.put('/api/users/:userId', requireAuth, (req, res) => {
-  if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
-  const { userId } = req.params;
-  const { accessibleProperties } = req.body;
-  if (!Array.isArray(accessibleProperties)) return res.status(400).json({ error: 'accessibleProperties must be an array' });
-  
-  const users = readUsers();
-  const user = users.find(u => u.id === userId);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  
-  user.accessibleProperties = accessibleProperties;
-  writeUsers(users);
-  res.json({ id: user.id, username: user.username, accessibleProperties: user.accessibleProperties });
+  (async () => {
+    if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
+    const { userId } = req.params;
+    const { username, password, accessibleProperties } = req.body;
+    const col = await getUsersCollection();
+    const user = await col.findOne({ id: userId });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    const update = {};
+    if (typeof username === 'string' && username.trim() !== '') update.username = username;
+    if (typeof password === 'string' && password.trim() !== '') update.password = password;
+    if (Array.isArray(accessibleProperties)) update.accessibleProperties = accessibleProperties;
+    if (Object.keys(update).length === 0) return res.status(400).json({ error: 'No valid fields to update' });
+    await col.updateOne({ id: userId }, { $set: update });
+    const updated = await col.findOne({ id: userId });
+    res.json({ id: updated.id, username: updated.username, accessibleProperties: updated.accessibleProperties });
+  })();
 });
 
 // Delete user (admin only)
 app.delete('/api/users/:userId', requireAuth, (req, res) => {
-  if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
-  const { userId } = req.params;
-  
-  let users = readUsers();
-  const initialLength = users.length;
-  users = users.filter(u => u.id !== userId);
-  
-  if (users.length === initialLength) return res.status(404).json({ error: 'User not found' });
-  writeUsers(users);
-  res.json({ success: true });
+  (async () => {
+    if (!isAdmin(req)) return res.status(403).json({ error: 'Admin only' });
+    const { userId } = req.params;
+    const col = await getUsersCollection();
+    const result = await col.deleteOne({ id: userId });
+    if (result.deletedCount === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ success: true });
+  })();
 });
 
 // Get current user info (logged-in users)
 app.get('/api/me', requireAuth, (req, res) => {
-  const auth = req.headers['authorization'];
-  const token = auth.replace('Bearer ', '');
-  const payload = TOKENS[token];
-  const username = payload.user;
-  const isAdminUser = username === DEFAULT_USER;
-  
-  if (isAdminUser) {
-    res.json({ username, role: 'admin', accessibleProperties: [] });
-  } else {
-    const users = readUsers();
-    const user = users.find(u => u.username === username);
-    res.json({ username, role: 'viewer', accessibleProperties: user?.accessibleProperties || [] });
-  }
+  (async () => {
+    const auth = req.headers['authorization'];
+    const token = auth.replace('Bearer ', '');
+    const payload = TOKENS[token];
+    const username = payload.user;
+    const isAdminUser = username === DEFAULT_USER;
+    if (isAdminUser) {
+      res.json({ username, role: 'admin', accessibleProperties: [] });
+    } else {
+      const user = await findUserByUsername(username);
+      res.json({ username, role: 'viewer', accessibleProperties: user?.accessibleProperties || [] });
+    }
+  })();
 });
 
 // serve Angular build from public folder
