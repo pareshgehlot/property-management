@@ -36,6 +36,9 @@ export class ApiService {
   updateUserAccess(userId: string, accessibleProperties: string[]) { 
     return this.http.put(this.base + `/users/${userId}`, { accessibleProperties }, this.headers()); 
   }
+  updateUserEdit(userId: string, updates: any) {
+    return this.http.put(this.base + `/users/${userId}`, updates, this.headers());
+  }
   deleteUser(userId: string) { 
     return this.http.delete(this.base + `/users/${userId}`, this.headers()); 
   }

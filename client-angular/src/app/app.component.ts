@@ -44,6 +44,11 @@ export class AppComponent implements OnInit, OnDestroy {
   newPassword: string = '';
   selectedUserForAccess: any = null;
   selectedPropertiesForUser: string[] = [];
+  userSearch: string = '';
+  accessPropertySearch: string = '';
+  editingUser: any = null;
+  editUsername: string = '';
+  editPassword: string = '';
 
   constructor(private api: ApiService) {}
 
@@ -104,6 +109,96 @@ export class AppComponent implements OnInit, OnDestroy {
       await this.api.deleteUser(userId).toPromise();
       this.loadUsers();
     }catch(e){ alert('Failed to delete user'); }
+  }
+
+  filteredUsers(): any[] {
+    const q = (this.userSearch || '').toLowerCase().trim();
+    if (!q) return this.users;
+    return this.users.filter(u => u.username.toLowerCase().includes(q));
+  }
+
+  resetUserSearch() {
+    this.userSearch = '';
+  }
+
+  editUser(user: any) {
+    this.editingUser = user;
+    this.editUsername = user.username;
+    this.editPassword = '';
+  }
+
+  async saveUserEdit() {
+    if (!this.editingUser) return;
+    try {
+      const update: any = {};
+      if (this.editUsername && this.editUsername !== this.editingUser.username) {
+        update.username = this.editUsername;
+      }
+      if (this.editPassword && this.editPassword.trim() !== '') {
+        update.password = this.editPassword;
+      }
+      if (Object.keys(update).length === 0) {
+        alert('No changes made');
+        return;
+      }
+      await this.api.updateUserEdit(this.editingUser.id, update).toPromise();
+      this.loadUsers();
+      this.editingUser = null;
+      this.editUsername = '';
+      this.editPassword = '';
+    } catch (e) {
+      alert('Failed to update user');
+    }
+  }
+
+  cancelUserEdit() {
+    this.editingUser = null;
+    this.editUsername = '';
+    this.editPassword = '';
+  }
+
+  filteredAccessProperties(): any[] {
+    const q = (this.accessPropertySearch || '').toLowerCase().trim();
+    if (!q) return this.properties;
+    return this.properties.filter(p => 
+      p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q)
+    );
+  }
+
+  resetAccessPropertySearch() {
+    this.accessPropertySearch = '';
+  }
+
+  isAllPropertiesSelected(): boolean {
+    const filteredProps = this.filteredAccessProperties();
+    if (filteredProps.length === 0) return false;
+    return filteredProps.every(p => this.selectedPropertiesForUser.includes(p.id));
+  }
+
+  toggleAllPropertiesAccess(event: any) {
+    const filteredProps = this.filteredAccessProperties();
+    if (event.target.checked) {
+      // Select all filtered properties
+      filteredProps.forEach(p => {
+        if (!this.selectedPropertiesForUser.includes(p.id)) {
+          this.selectedPropertiesForUser.push(p.id);
+        }
+      });
+    } else {
+      // Deselect all filtered properties
+      filteredProps.forEach(p => {
+        const idx = this.selectedPropertiesForUser.indexOf(p.id);
+        if (idx >= 0) {
+          this.selectedPropertiesForUser.splice(idx, 1);
+        }
+      });
+    }
+  }
+
+  cancelAccessEdit() {
+    this.selectedUserForAccess = null;
+    this.selectedPropertiesForUser = [];
+    this.accessPropertySearch = '';
   }
 
   async updateUserAccess(){

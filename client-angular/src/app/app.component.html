@@ -34,10 +34,10 @@
     <!-- Properties Section -->
     <div *ngIf="token">
       <!-- User Management Panel (Admin Only) -->
-      <div *ngIf="showUsersPanel && userRole === 'admin'" style="background: white; border-radius: 12px; padding: clamp(16px, 3vw, 24px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: clamp(16px, 3vw, 24px);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: clamp(16px, 2vw, 20px);">
-          <h3 style="margin: 0;">👥 User Management</h3>
-          <button class="btn btn-ghost" (click)="showUsersPanel = false" style="padding: 6px 12px;">✕</button>
+      <div *ngIf="showUsersPanel && userRole === 'admin'" style="background: white; border-radius: 12px; padding: clamp(16px, 3vw, 24px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: clamp(16px, 3vw, 24px); width: 100%; box-sizing: border-box;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: clamp(16px, 2vw, 20px); flex-wrap: wrap; gap: clamp(8px, 2vw, 12px);">
+          <h3 style="margin: 0; flex: 0 1 auto;">👥 User Management</h3>
+          <button class="btn btn-ghost" (click)="showUsersPanel = false" style="padding: 6px 12px; flex: 0 0 auto;">✕</button>
         </div>
 
         <!-- Create New User -->
@@ -48,6 +48,12 @@
             <input class="input" type="password" placeholder="Password" [(ngModel)]="newPassword" style="flex: 1; min-width: 150px;" />
             <button class="btn btn-primary" (click)="createUser()" style="flex: 0 1 auto; white-space: nowrap;">Create User</button>
           </div>
+        </div>
+
+        <!-- Users Search -->
+        <div style="margin-bottom: clamp(12px, 2vw, 16px); display: flex; gap: clamp(8px, 2vw, 12px); flex-wrap: wrap;">
+          <input class="input" placeholder="Search users..." [(ngModel)]="userSearch" style="flex: 1; min-width: 150px;" />
+          <button class="btn btn-secondary btn-sm" (click)="resetUserSearch()" style="flex: 0 1 auto; white-space: nowrap;">Reset</button>
         </div>
 
         <!-- Users List -->
@@ -61,30 +67,73 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let user of users">
-                <td><strong>{{ user.username }}</strong></td>
+              <tr *ngIf="filteredUsers().length === 0">
+                <td colspan="3" style="text-align: center; padding: clamp(12px, 2vw, 16px); color: #9ca3af;">No users found</td>
+              </tr>
+              <tr *ngFor="let user of filteredUsers()">
+                <td><strong style="font-size: clamp(12px, 2vw, 14px);">{{ user.username }}</strong></td>
                 <td style="color: #6b7280; font-size: clamp(12px, 2vw, 13px);">{{ user.accessibleProperties?.length || 0 }} properties</td>
-                <td style="text-align: right; white-space: nowrap;">
-                  <button class="btn btn-outline-primary btn-sm" (click)="selectUserForAccess(user)" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px); margin-right: clamp(4px, 1vw, 8px);">🔑 Access</button>
-                  <button class="btn btn-danger btn-sm" (click)="deleteUser(user.id)" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);">🗑️ Delete</button>
+                <td style="text-align: right; white-space: nowrap; font-size: clamp(10px, 1.5vw, 13px);">
+                  <button class="btn btn-outline-secondary btn-sm" (click)="editUser(user)" title="Edit user" style="padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px); margin-right: clamp(4px, 1vw, 8px);">✏️ Edit</button>
+                  <button class="btn btn-outline-primary btn-sm" (click)="selectUserForAccess(user)" title="Manage access" style="padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px); margin-right: clamp(4px, 1vw, 8px);">🔑 Access</button>
+                  <button class="btn btn-danger btn-sm" (click)="deleteUser(user.id)" title="Delete user" style="padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);">🗑️ Delete</button>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
+        <!-- User Edit Modal -->
+        <div *ngIf="editingUser" style="background: #eff6ff; padding: clamp(12px, 2vw, 16px); border-radius: 8px; margin-top: clamp(12px, 2vw, 16px);">
+          <h4 style="margin-top: 0;">Edit User: {{ editingUser.username }}</h4>
+          <div class="form-group" style="gap: clamp(8px, 2vw, 12px); flex-wrap: wrap;">
+            <input class="input" placeholder="New Username" [(ngModel)]="editUsername" style="flex: 1; min-width: 150px;" />
+            <input class="input" type="password" placeholder="New Password (optional)" [(ngModel)]="editPassword" style="flex: 1; min-width: 150px;" />
+          </div>
+          <div style="display: flex; gap: clamp(8px, 2vw, 12px); margin-top: clamp(12px, 2vw, 16px); flex-wrap: wrap;">
+            <button class="btn btn-primary" (click)="saveUserEdit()" style="flex: 0 1 auto;">Save Changes</button>
+            <button class="btn btn-secondary" (click)="cancelUserEdit()" style="flex: 0 1 auto;">Cancel</button>
+          </div>
+        </div>
+
         <!-- User Access Panel -->
         <div *ngIf="selectedUserForAccess" style="background: #eff6ff; padding: clamp(12px, 2vw, 16px); border-radius: 8px; margin-top: clamp(12px, 2vw, 16px);">
           <h4 style="margin-top: 0;">Manage Access for {{ selectedUserForAccess.username }}</h4>
-          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: clamp(8px, 2vw, 12px);">
-            <label *ngFor="let prop of properties" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-              <input type="checkbox" [checked]="selectedPropertiesForUser.includes(prop.id)" (change)="togglePropertyAccess(prop.id)" />
-              <span>{{ prop.name }}</span>
-            </label>
+          
+          <!-- Property Search -->
+          <div style="margin-bottom: clamp(12px, 2vw, 16px); display: flex; gap: clamp(8px, 2vw, 12px); flex-wrap: wrap;">
+            <input class="input" placeholder="Search properties..." [(ngModel)]="accessPropertySearch" style="flex: 1; min-width: 150px;" />
+            <button class="btn btn-secondary btn-sm" (click)="resetAccessPropertySearch()" style="flex: 0 1 auto; white-space: nowrap;">Reset</button>
           </div>
-          <div style="display: flex; gap: clamp(8px, 2vw, 12px); margin-top: clamp(12px, 2vw, 16px);">
+
+          <!-- Properties Table with Checkboxes -->
+          <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: clamp(12px, 2vw, 16px);">
+            <table class="table" style="margin: 0; min-width: 100%; background: white;">
+              <thead>
+                <tr>
+                  <th style="text-align: center; width: 50px;"><input type="checkbox" (change)="toggleAllPropertiesAccess($event)" [checked]="isAllPropertiesSelected()" /></th>
+                  <th style="text-align: left;">Property Name</th>
+                  <th style="text-align: left;">Property ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngIf="filteredAccessProperties().length === 0">
+                  <td colspan="3" style="text-align: center; padding: clamp(12px, 2vw, 16px); color: #9ca3af;">No properties found</td>
+                </tr>
+                <tr *ngFor="let prop of filteredAccessProperties()" [style.background]="selectedPropertiesForUser.includes(prop.id) ? '#dbeafe' : 'transparent'">
+                  <td style="text-align: center; width: 50px;">
+                    <input type="checkbox" [checked]="selectedPropertiesForUser.includes(prop.id)" (change)="togglePropertyAccess(prop.id)" />
+                  </td>
+                  <td style="font-size: clamp(12px, 2vw, 14px);">{{ prop.name }}</td>
+                  <td style="font-size: clamp(11px, 1.5vw, 12px); color: #6b7280;"><code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">{{ prop.id }}</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="display: flex; gap: clamp(8px, 2vw, 12px); flex-wrap: wrap;">
             <button class="btn btn-primary" (click)="updateUserAccess()" style="flex: 0 1 auto;">Save Access</button>
-            <button class="btn btn-secondary" (click)="selectedUserForAccess = null" style="flex: 0 1 auto;">Cancel</button>
+            <button class="btn btn-secondary" (click)="cancelAccessEdit()" style="flex: 0 1 auto;">Cancel</button>
           </div>
         </div>
       </div>
