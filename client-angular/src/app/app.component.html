@@ -185,44 +185,47 @@
                 <td [attr.colspan]="userRole === 'admin' ? 6 : 2" style="text-align: center; padding: clamp(20px, 5vw, 32px); color: #9ca3af; font-size: clamp(12px, 2vw, 14px);">No properties found. Add one above to get started.</td>
               </tr>
               <!-- Admin Table Rows -->
-              <tr *ngFor="let p of filteredProperties" (click)="viewProp(p)" class="table-row-clickable" [class.selected]="selected?.id === p.id" [ngIf]="userRole === 'admin'">
-                <td><strong style="font-size: clamp(12px, 2vw, 14px);">{{ p.name }}</strong></td>
-                <td><code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: clamp(10px, 1.5vw, 12px);">{{ p.id }}</code></td>
-                <td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #6b7280; font-size: clamp(11px, 1.5vw, 13px);">{{ p.icsUrl }}</td>
-                <td style="text-align: center;">
-                  <span style="background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: clamp(10px, 1.5vw, 12px); display: inline-block;">{{ statusMap[p.id]?.count || 0 }}</span>
-                </td>
-                <td style="font-size: clamp(11px, 1.5vw, 12px); color: #374151;">
-                  <div *ngIf="getUsersWithAccess(p.id).length === 0" style="color: #9ca3af;">No users</div>
-                  <div *ngIf="getUsersWithAccess(p.id).length > 0" style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-                    <div *ngFor="let user of getUsersWithAccess(p.id).slice(0, 3)" 
-                         style="width: 28px; height: 28px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
-                         title="{{ user.username }}"
-                         (click)="openUserAccessDialog(p.id)">
-                      {{ user.username.charAt(0).toUpperCase() }}
+              <ng-container *ngIf="userRole === 'admin'">
+                <tr *ngFor="let p of filteredProperties" (click)="viewProp(p)" class="table-row-clickable" [class.selected]="selected?.id === p.id">
+                  <td><strong style="font-size: clamp(12px, 2vw, 14px);">{{ p.name }}</strong></td>
+                  <td><code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: clamp(10px, 1.5vw, 12px);">{{ p.id }}</code></td>
+                  <td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #6b7280; font-size: clamp(11px, 1.5vw, 13px);">{{ p.icsUrl }}</td>
+                  <td style="text-align: center;">
+                    <span style="background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: clamp(10px, 1.5vw, 12px); display: inline-block;">{{ statusMap[p.id]?.count || 0 }}</span>
+                  </td>
+                  <td style="font-size: clamp(11px, 1.5vw, 12px); color: #374151;">
+                    <div *ngIf="getUsersWithAccess(p.id).length === 0" style="color: #9ca3af;">No users</div>
+                    <div *ngIf="getUsersWithAccess(p.id).length > 0" style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                      <div *ngFor="let user of getUsersWithAccess(p.id).slice(0, 3)" 
+                           style="width: 28px; height: 28px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
+                           title="{{ user.username }}"
+                           (click)="openUserAccessDialog(p.id)">
+                        {{ user.username.charAt(0).toUpperCase() }}
+                      </div>
+                      <span *ngIf="getUsersWithAccess(p.id).length > 3" 
+                            style="width: 28px; height: 28px; background: #9ca3af; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
+                            title="Click to view all users"
+                            (click)="openUserAccessDialog(p.id)">
+                        +{{ getUsersWithAccess(p.id).length - 3 }}
+                      </span>
                     </div>
-                    <span *ngIf="getUsersWithAccess(p.id).length > 3" 
-                          style="width: 28px; height: 28px; background: #9ca3af; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 11px; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.1);"
-                          title="Click to view all users"
-                          (click)="openUserAccessDialog(p.id)">
-                      +{{ getUsersWithAccess(p.id).length - 3 }}
-                    </span>
-                  </div>
-                </td>
-                <td style="text-align: right; white-space: nowrap;" (click)="$event.stopPropagation()">
-                  <button class="btn btn-outline-secondary btn-sm" (click)="viewProp(p)" title="View property details" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px); margin-right: clamp(4px, 1vw, 8px);">👁️ View</button>
-                  <button class="btn btn-outline-primary btn-sm" (click)="openEdit(p)" title="Edit property" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px); margin-right: clamp(4px, 1vw, 8px);">✏️ Edit</button>
-                  <button class="btn btn-danger btn-sm" (click)="deleteProp(p.id)" title="Delete property" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);">🗑️ Delete</button>
-                </td>
-              </tr>
+                  </td>
+                  <td style="text-align: right; white-space: nowrap;" (click)="$event.stopPropagation()">
+                    <button class="btn btn-outline-secondary btn-sm" (click)="viewProp(p)" title="View property details" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px); margin-right: clamp(4px, 1vw, 8px);">👁️ View</button>
+                    <button class="btn btn-outline-primary btn-sm" (click)="openEdit(p)" title="Edit property" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px); margin-right: clamp(4px, 1vw, 8px);">✏️ Edit</button>
+                    <button class="btn btn-danger btn-sm" (click)="deleteProp(p.id)" title="Delete property" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);">🗑️ Delete</button>
+                  </td>
+                </tr>
+              </ng-container>
               <!-- Non-Admin Table Rows -->
-              <tr *ngFor="let p of filteredProperties" (click)="viewProp(p)" class="table-row-clickable" [class.selected]="selected?.id === p.id" [ngIf]="userRole !== 'admin'">
-                <td><strong style="font-size: clamp(12px, 2vw, 14px);">{{ p.name }}</strong></td>
-                <td style="text-align: right; white-space: nowrap;" (click)="$event.stopPropagation()">
-                  <button class="btn btn-outline-secondary btn-sm" (click)="viewProp(p)" title="View calendar" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);">📅 View</button>
-                </td>
-              </tr>
-            </tbody>
+              <ng-container *ngIf="userRole !== 'admin'">
+                <tr *ngFor="let p of filteredProperties" (click)="viewProp(p)" class="table-row-clickable" [class.selected]="selected?.id === p.id">
+                  <td><strong style="font-size: clamp(12px, 2vw, 14px);">{{ p.name }}</strong></td>
+                  <td style="text-align: right; white-space: nowrap;" (click)="$event.stopPropagation()">
+                    <button class="btn btn-outline-secondary btn-sm" (click)="viewProp(p)" title="View calendar" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);">📅 View</button>
+                  </td>
+                </tr>
+              </ng-container>
           </table>
         </div>
       </div>
