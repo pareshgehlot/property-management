@@ -260,12 +260,17 @@ app.get('/api/properties/:id/status', (req, res) => {
 
 // serve Angular build if present (client-angular)
 const CLIENT_DIST = path.join(__dirname, '..', 'client-angular', 'dist', 'client-angular');
+console.log('CLIENT_DIST:', CLIENT_DIST);
+console.log('CLIENT_DIST exists:', fs.existsSync(CLIENT_DIST));
 if (fs.existsSync(CLIENT_DIST)) {
+  console.log('Serving static files from:', CLIENT_DIST);
   app.use('/', express.static(CLIENT_DIST));
   // SPA fallback
   app.get('*', (req, res) => {
     res.sendFile(path.join(CLIENT_DIST, 'index.html'));
   });
+} else {
+  console.warn('CLIENT_DIST not found! Will serve 404 for all routes except /api/*');
 }
 
 // trigger initial fetch for existing properties (non-blocking)
