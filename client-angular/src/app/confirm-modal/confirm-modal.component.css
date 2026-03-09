@@ -1,0 +1,4 @@
+.modal-backdrop.show { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1040; }
+.modal.d-block { position: fixed; inset: 0; display: block; z-index: 1050; }
+.modal-dialog { pointer-events: none; }
+.modal-content { pointer-events: auto; }

@@ -1,0 +1,27 @@
+<div class="calendar-root">
+  <div class="calendar-header">
+    <div>
+      <button class="btn btn-outline-secondary btn-sm" (click)="onPrev()">‹‹</button>
+    </div>
+    <div class="calendar-title">{{ monthA?.title }} — {{ monthB?.title }}</div>
+    <div>
+      <button class="btn btn-outline-secondary btn-sm" (click)="onNext()">››</button>
+    </div>
+  </div>
+
+  <div class="calendar-body" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">
+    <ng-container *ngFor="let m of months">
+      <div class="month">
+        <h4 style="text-align:center;margin:6px 0">{{ m.title }}</h4>
+        <div class="weekdays" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;font-size:12px">
+          <div *ngFor="let w of ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']" style="text-align:center">{{ w }}</div>
+        </div>
+        <div class="days" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">
+          <div *ngFor="let cell of m.weeks" [ngClass]="{ 'cell-booked': cell.booked, 'cell-available': !cell.booked && cell.inMonth, 'cell-out': !cell.inMonth, 'cell-today': cell.isToday }" (click)="onDayClick(cell)" [style.cursor]="cell.bookings.length > 0 ? 'pointer' : 'default'" [title]="cell.bookings.length > 0 ? 'Click to view booking' : ''" style="height:36px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:#fff;transition:all 0.2s ease">
+            <span *ngIf="cell.inMonth">{{ cell.date.getDate() }}</span>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+</div>

@@ -1,0 +1,146 @@
+<div style="min-height: 100vh; padding: 0; margin: 0; width: 100%; overflow-x: hidden;">
+  <!-- Header -->
+  <header style="background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%); color: white; padding: clamp(16px, 3vw, 24px) 0; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 0 clamp(12px, 3vw, 20px); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: clamp(12px, 3vw, 24px);">
+      <div style="min-width: 0;">
+        <h1 style="margin: 0; font-size: clamp(20px, 5vw, 32px); font-weight: 700;">📋 {{ title }}</h1>
+        <p style="margin: clamp(4px, 1vw, 8px) 0 0 0; opacity: 0.9; font-size: clamp(12px, 2vw, 14px);">Manage your properties and bookings</p>
+      </div>
+      <div *ngIf="token" style="display: flex; gap: clamp(8px, 2vw, 16px); align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+        <div style="display: flex; align-items: center; gap: clamp(6px, 1vw, 8px); font-size: clamp(12px, 2vw, 13px);">
+          <span style="opacity: 0.9;">Logged in as</span>
+          <strong>{{ username || 'admin' }}</strong>
+        </div>
+        <button class="btn btn-ghost" (click)="logout()" style="color: white; border: 1px solid rgba(255,255,255,0.3); padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2vw, 14px); font-size: clamp(12px, 2vw, 14px);">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main style="max-width: 1200px; margin: 0 auto; padding: clamp(20px, 4vw, 32px) clamp(12px, 3vw, 20px); width: 100%; box-sizing: border-box;">
+    <!-- Login Section -->
+    <div *ngIf="!token" style="background: white; border-radius: 12px; padding: clamp(24px, 5vw, 40px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); max-width: 450px; margin: 0 auto; width: 100%;">
+      <h2 style="margin-top: 0; text-align: center;">Welcome</h2>
+      <p style="text-align: center; color: #6b7280; margin: 0 0 clamp(16px, 3vw, 24px) 0; font-size: clamp(13px, 2vw, 14px);">Enter your credentials to continue</p>
+      <div class="form-group" style="flex-direction: column; gap: clamp(8px, 2vw, 12px);">
+        <input class="input" placeholder="Username" [(ngModel)]="username" style="width: 100%; padding: clamp(8px, 2vw, 12px);" />
+        <input class="input" placeholder="Password" type="password" [(ngModel)]="password" style="width: 100%; padding: clamp(8px, 2vw, 12px);" />
+        <button class="btn btn-primary" (click)="login()" style="width: 100%; margin-top: clamp(8px, 2vw, 16px); justify-content: center; padding: clamp(8px, 2vw, 12px) clamp(12px, 3vw, 16px);">Sign In</button>
+      </div>
+    </div>
+
+    <!-- Properties Section -->
+    <div *ngIf="token">
+      <!-- Add Property Card -->
+      <div class="form-section" style="padding: clamp(12px, 3vw, 16px); margin-bottom: clamp(16px, 3vw, 24px);">
+        <h3 style="margin-top: 0; margin-bottom: clamp(12px, 2vw, 16px);">➕ Add New Property</h3>
+        <div class="form-group" style="gap: clamp(8px, 2vw, 12px); flex-wrap: wrap;">
+          <input class="input" placeholder="Property Name" [(ngModel)]="name" style="flex: 0 1 clamp(150px, 25%, 250px); width: auto; min-width: 150px;" />
+          <input class="input" placeholder="ICS Feed URL" [(ngModel)]="icsUrl" style="flex: 1; min-width: clamp(200px, 100%, 300px);" />
+          <button class="btn btn-primary" (click)="addProp()" style="flex: 0 1 auto; white-space: nowrap;">Add Property</button>
+        </div>
+      </div>
+
+      <!-- Search & Filter Section -->
+      <div class="search-bar" style="gap: clamp(8px, 2vw, 12px); margin-bottom: clamp(16px, 3vw, 24px); flex-wrap: wrap;">
+        <span style="color: #9ca3af; flex: 0 0 auto; font-size: clamp(14px, 3vw, 18px);">🔍</span>
+        <input placeholder="Search by name, ID, or URL..." [(ngModel)]="propertySearch" (ngModelChange)="onSearchChange()" style="flex: 1; min-width: 150px;" />
+        <button class="btn btn-secondary btn-sm" (click)="resetPropertyFilter()" style="flex: 0 1 auto; white-space: nowrap;">Reset</button>
+      </div>
+
+      <!-- Properties Table Card -->
+      <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: clamp(16px, 3vw, 24px); width: 100%; box-sizing: border-box;">
+        <div style="padding: clamp(12px, 2vw, 16px); border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+          <h3 style="margin: 0; font-size: clamp(14px, 2.5vw, 16px);">📍 Your Properties ({{ filteredProperties.length }})</h3>
+        </div>
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch;">
+          <table class="table" style="margin: 0; min-width: 100%;">
+            <thead>
+              <tr>
+                <th style="text-align: left;">Property Name</th>
+                <th style="text-align: left;">ID</th>
+                <th style="text-align: left;">ICS URL</th>
+                <th style="text-align: center;">Bookings</th>
+                <th style="text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngIf="filteredProperties.length === 0">
+                <td colspan="5" style="text-align: center; padding: clamp(20px, 5vw, 32px); color: #9ca3af; font-size: clamp(12px, 2vw, 14px);">No properties found. Add one above to get started.</td>
+              </tr>
+              <tr *ngFor="let p of filteredProperties" (click)="viewProp(p)" class="table-row-clickable" [class.selected]="selected?.id === p.id">
+                <td><strong style="font-size: clamp(12px, 2vw, 14px);">{{ p.name }}</strong></td>
+                <td><code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: clamp(10px, 1.5vw, 12px);">{{ p.id }}</code></td>
+                <td style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #6b7280; font-size: clamp(11px, 1.5vw, 13px);">{{ p.icsUrl }}</td>
+                <td style="text-align: center;">
+                  <span style="background: #dbeafe; color: #1e40af; padding: 4px 8px; border-radius: 6px; font-weight: 600; font-size: clamp(10px, 1.5vw, 12px); display: inline-block;">{{ statusMap[p.id]?.count || 0 }}</span>
+                </td>
+                <td style="text-align: right; white-space: nowrap;" (click)="$event.stopPropagation()">
+                  <button class="btn btn-outline-secondary btn-sm" (click)="viewProp(p)" title="View property details" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px); margin-right: clamp(4px, 1vw, 8px);">👁️ View</button>
+                  <button class="btn btn-outline-primary btn-sm" (click)="openEdit(p)" title="Edit property" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px); margin-right: clamp(4px, 1vw, 8px);">✏️ Edit</button>
+                  <button class="btn btn-danger btn-sm" (click)="deleteProp(p.id)" title="Delete property" style="font-size: clamp(10px, 1.5vw, 13px); padding: clamp(4px, 1vw, 6px) clamp(8px, 1.5vw, 12px);">🗑️ Delete</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Analytics Section (only show when property selected) -->
+      <div class="form-section" *ngIf="selected" style="padding: clamp(12px, 3vw, 16px); margin-bottom: clamp(16px, 3vw, 24px);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: clamp(12px, 2vw, 16px);">
+          <div style="flex: 1; min-width: 200px;">
+            <h3 style="margin-top: 0; margin-bottom: clamp(12px, 2vw, 16px);">📊 Analytics Dashboard</h3>
+            <div style="display: flex; gap: clamp(8px, 2vw, 16px); align-items: center; flex-wrap: wrap; flex: 1;">
+              <div style="flex: 0 1 auto;">
+                <label style="font-size: clamp(12px, 2vw, 13px); color: #6b7280; display: block; margin-bottom: 4px;">Date Range</label>
+                <select class="form-select" [(ngModel)]="rangeMode" (change)="renderDashboard()" style="font-size: clamp(12px, 2vw, 14px);">
+                  <option value="this">This Month</option>
+                  <option value="next2">Next 2 Months</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+              </div>
+              <div *ngIf="rangeMode==='custom'" style="display: flex; gap: clamp(6px, 1.5vw, 8px); align-items: flex-end; flex-wrap: wrap;">
+                <div style="flex: 0 1 auto;">
+                  <label style="font-size: clamp(12px, 2vw, 13px); color: #6b7280; display: block; margin-bottom: 4px;">From</label>
+                  <input class="form-control" type="date" [(ngModel)]="customFrom" (change)="renderDashboard()" style="font-size: clamp(12px, 2vw, 14px);" />
+                </div>
+                <div style="flex: 0 1 auto;">
+                  <label style="font-size: clamp(12px, 2vw, 13px); color: #6b7280; display: block; margin-bottom: 4px;">To</label>
+                  <input class="form-control" type="date" [(ngModel)]="customTo" (change)="renderDashboard()" style="font-size: clamp(12px, 2vw, 14px);" />
+                </div>
+              </div>
+              <button class="btn btn-link btn-sm" (click)="resetRange()" style="flex: 0 1 auto; white-space: nowrap; font-size: clamp(12px, 2vw, 13px);">Reset</button>
+            </div>
+          </div>
+          <button class="btn btn-primary" (click)="refresh()" [disabled]="!selected" style="flex: 0 1 auto; white-space: nowrap; font-size: clamp(12px, 2vw, 14px); padding: clamp(6px, 1.5vw, 10px) clamp(10px, 2vw, 16px);">🔄 Refresh Data</button>
+        </div>
+      </div>
+
+      <!-- Charts Section (only show when property selected) -->
+      <div class="dashboard-charts" *ngIf="selected" style="display: flex; gap: clamp(12px, 2vw, 20px); flex-wrap: wrap; margin-bottom: clamp(16px, 3vw, 24px); align-items: flex-start; width: 100%;">
+        <div style="background: white; border-radius: 12px; padding: clamp(12px, 2vw, 16px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); flex: 0 1 clamp(250px, 35%, 350px); min-width: 250px;">
+          <h4 style="margin: 0 0 clamp(8px, 2vw, 12px) 0; font-size: clamp(13px, 2vw, 14px); color: #374151;">Bookings by Property</h4>
+          <canvas id="chartPie" style="max-width: 100%;"></canvas>
+        </div>
+        <div style="background: white; border-radius: 12px; padding: clamp(12px, 2vw, 16px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); flex: 1; min-width: clamp(250px, 100%, 400px);">
+          <h4 style="margin: 0 0 clamp(8px, 2vw, 12px) 0; font-size: clamp(13px, 2vw, 14px); color: #374151;">Bookings Over Time</h4>
+          <canvas id="chartBar" style="max-width: 100%;"></canvas>
+        </div>
+      </div>
+
+      <!-- Calendar Section (only show when property selected) -->
+      <div style="background: white; border-radius: 12px; padding: clamp(12px, 3vw, 16px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: clamp(16px, 3vw, 24px); width: 100%; box-sizing: border-box;" *ngIf="selected">
+        <h3 style="margin-top: 0; margin-bottom: clamp(12px, 2vw, 16px); font-size: clamp(14px, 3vw, 18px);">📅 Calendar View</h3>
+        <div style="width: 100%; display: flex; gap: clamp(8px, 2vw, 12px); box-sizing: border-box;">
+          <app-calendar style="flex: 1;" [events]="currentEvents" [baseDate]="calBase" (changeMonth)="onCalendarChange($event)" (selectBooking)="viewBooking($event)"></app-calendar>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modals -->
+  <app-confirm-modal *ngIf="confirmVisible" [message]="confirmMessage" (close)="onConfirmModal($event)"></app-confirm-modal>
+  <app-edit-modal *ngIf="editVisible" [id]="editId" [name]="editName" [icsUrl]="editIcsUrl" (close)="onEditClose($event)"></app-edit-modal>
+  <app-booking-detail *ngIf="bookingDetailVisible" [booking]="selectedBooking" [visible]="bookingDetailVisible" (close)="bookingDetailVisible = false"></app-booking-detail>
+</div>
