@@ -63,7 +63,12 @@ export class AppComponent implements OnInit, OnDestroy {
   async login(){
     try{
       const res: any = await this.api.login(this.username, this.password).toPromise();
-      if(res && res.token){ localStorage.setItem('pm_token', res.token); this.token = res.token; this.loadProps(); }
+      if(res && res.token){ 
+        localStorage.setItem('pm_token', res.token); 
+        this.token = res.token; 
+        this.loadProps(); 
+        this.loadUserInfo();
+      }
     }catch(err){ alert('Login failed'); }
   }
 
