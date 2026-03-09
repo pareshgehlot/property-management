@@ -216,6 +216,12 @@ export class AppComponent implements OnInit, OnDestroy {
     }catch(e){ alert('Failed to update user access'); }
   }
 
+  getUsersWithAccess(propertyId: string): any[] {
+    return this.users.filter(user => 
+      user.accessibleProperties && user.accessibleProperties.includes(propertyId)
+    );
+  }
+
   selectUserForAccess(user: any){
     this.selectedUserForAccess = user;
     this.selectedPropertiesForUser = [...(user.accessibleProperties || [])];
