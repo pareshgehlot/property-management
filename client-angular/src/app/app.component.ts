@@ -50,6 +50,11 @@ export class AppComponent implements OnInit, OnDestroy {
   editUsername: string = '';
   editPassword: string = '';
 
+  // User Access Dialog
+  userAccessDialogVisible: boolean = false;
+  selectedPropertyForUserAccess: string = '';
+  propertyUserSearch: string = '';
+
   constructor(private api: ApiService) {}
 
   ngOnInit(){
@@ -220,6 +225,47 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.users.filter(user => 
       user.accessibleProperties && user.accessibleProperties.includes(propertyId)
     );
+  }
+
+  openUserAccessDialog(propertyId: string) {
+    this.selectedPropertyForUserAccess = propertyId;
+    this.userAccessDialogVisible = true;
+    this.propertyUserSearch = '';
+  }
+
+  closeUserAccessDialog() {
+    this.userAccessDialogVisible = false;
+    this.selectedPropertyForUserAccess = '';
+    this.propertyUserSearch = '';
+  }
+
+  filteredPropertyUsers(): any[] {
+    const usersForProperty = this.getUsersWithAccess(this.selectedPropertyForUserAccess);
+    const q = (this.propertyUserSearch || '').toLowerCase().trim();
+    if (!q) return usersForProperty;
+    return usersForProperty.filter(user => 
+      (user.username || '').toLowerCase().includes(q)
+    );
+  }
+
+  async removeUserFromProperty(userId: string) {
+    if (!confirm('Are you sure you want to remove this user from this property?')) return;
+    try {
+      const user = this.users.find(u => u.id === userId);
+      if (!user) return;
+      
+      // Remove the property from user's accessible properties
+      user.accessibleProperties = user.accessibleProperties.filter((p: string) => p !== this.selectedPropertyForUserAccess);
+      
+      // Update the user on the server
+      await this.api.updateUserAccess(userId, user.accessibleProperties).toPromise();
+      
+      // Reload users to reflect changes
+      await this.loadUsers();
+    } catch (e) { 
+      alert('Failed to remove user from property'); 
+      console.error(e);
+    }
   }
 
   selectUserForAccess(user: any){
