@@ -278,12 +278,12 @@
       </div>
 
       <!-- Calendar Section (only show when property selected) -->
-      <div style="background: white; border-radius: 12px; padding: clamp(12px, 3vw, 16px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: clamp(16px, 3vw, 24px); width: 100%; box-sizing: border-box; position: relative;" *ngIf="selected">
+      <div style="background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); margin-bottom: clamp(16px, 3vw, 24px); width: 100%; box-sizing: border-box; overflow: hidden;" *ngIf="selected">
         <!-- Sticky Property Header -->
-        <div style="position: sticky; top: 0; background: white; z-index: 100; padding: clamp(8px, 2vw, 12px); margin: -12px -16px 12px -16px; padding-left: clamp(12px, 3vw, 20px); padding-right: clamp(12px, 3vw, 20px); border-bottom: 2px solid #e5e7eb; border-radius: 12px 12px 0 0;">
+        <div style="position: sticky; top: 0; background: white; z-index: 100; padding: clamp(12px, 3vw, 16px); border-bottom: 2px solid #e5e7eb;">
           <h3 style="margin: 0; font-size: clamp(14px, 3vw, 18px); color: #1f2937;">📅 Calendar View: <strong style="color: #3b82f6;">{{ selected.name }}</strong></h3>
         </div>
-        <div style="width: 100%; display: flex; gap: clamp(8px, 2vw, 12px); box-sizing: border-box;">
+        <div style="width: 100%; display: flex; gap: clamp(8px, 2vw, 12px); box-sizing: border-box; padding: clamp(12px, 3vw, 16px);">
           <app-calendar style="flex: 1;" [events]="currentEvents" [baseDate]="calBase" (changeMonth)="onCalendarChange($event)" (selectBooking)="viewBooking($event)"></app-calendar>
         </div>
       </div>
