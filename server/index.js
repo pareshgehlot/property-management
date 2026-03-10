@@ -266,6 +266,17 @@ app.get('/api/properties/:id/bookings', requireAuth, (req, res) => {
     const from = req.query.from; // ISO yyyy-mm-dd
     const to = req.query.to;
     const cacheFile = path.join(CACHE_DIR, `${id}.json`);
+    
+    // If cache doesn't exist, try to download ICS first
+    if (!fs.existsSync(cacheFile)) {
+      const props = readProperties();
+      const prop = props.find(p => p.id === id);
+      if (!prop) return res.status(404).json({ error: 'property not found' });
+      console.log('Cache missing for property', id, '- downloading ICS...');
+      await downloadIcs(prop);
+    }
+    
+    // Now read the cache
     if (!fs.existsSync(cacheFile)) return res.status(404).json({ error: 'no cache yet' });
     const raw = fs.readFileSync(cacheFile, 'utf8');
     const parsed = JSON.parse(raw);

@@ -392,7 +392,10 @@ export class AppComponent implements OnInit, OnDestroy {
     let res: any = null;
     try{ res = await this.api.getBookings(this.selected.id, qFrom, qTo).toPromise(); } catch(e){ res = { events: [] }; }
   const events = (res && res.events) ? res.events : [];
+  console.log('Bookings API Response:', res);
+  console.log('Events from API:', events);
   this.currentEvents = events;
+  console.log('currentEvents set to:', this.currentEvents);
 
     // build daily counts for bar chart
     const labels: string[] = [];

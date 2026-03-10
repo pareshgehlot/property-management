@@ -26,6 +26,7 @@ export class CalendarComponent implements OnChanges {
 
   private computeBookingsSet(fromDate: Date, toDate: Date){
     const set = new Set<string>();
+    console.log('ComputeBookingsSet - this.events:', this.events);
     for(const e of this.events || []){
       const s = new Date(e.start); const en = new Date(e.end);
       const start = s > fromDate ? s : fromDate;
@@ -34,6 +35,7 @@ export class CalendarComponent implements OnChanges {
         set.add(d.toISOString().slice(0,10));
       }
     }
+    console.log('ComputeBookingsSet - result set:', set);
     return set;
   }
 
@@ -62,9 +64,12 @@ export class CalendarComponent implements OnChanges {
         const s = new Date(e.start);
         const en = new Date(e.end);
         const checkDate = new Date(iso);
-        return checkDate >= s && checkDate < en;
+        const isBooked = checkDate >= s && checkDate < en;
+        return isBooked;
       });
-      cells.push({ date: dt, iso, inMonth: true, booked: bookings.has(iso), isToday, bookings: dayBookings });
+      const isBooked = bookings.has(iso);
+      console.log(`Date ${iso}: bookings.has=${isBooked}, dayBookings.length=${dayBookings.length}, computed=${isBooked ? 'BOOKED' : 'AVAILABLE'}`);
+      cells.push({ date: dt, iso, inMonth: true, booked: isBooked, isToday, bookings: dayBookings });
     }
     // pad to full weeks
     while(cells.length % 7 !== 0) cells.push({ date: new Date(year, month, daysInMonth+1), iso: '', inMonth: false, booked:false, isToday:false, bookings: [] });
